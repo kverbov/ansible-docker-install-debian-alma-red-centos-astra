@@ -1,0 +1,13 @@
+---
+- name: Installing dependencies for deb 
+  include_tasks: docker_install_deb.yml
+  when: ansible_os_family in ['Debian', 'Astra Linux', 'Astra Linux (Orel)']
+
+#  apply:
+#    tags: [docker, ubuntu]
+
+
+- name: Installing Docker dependencies for rpm
+  include_tasks: docker_install_rpm.yml
+#  when: docker_os_version=='rpm'
+  when: ansible_os_family in ['AlmaLinux', 'RedHat', 'CentOS', 'RED']

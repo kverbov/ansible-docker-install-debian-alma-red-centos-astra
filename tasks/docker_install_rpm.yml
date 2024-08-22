@@ -1,0 +1,121 @@
+---
+- debug:
+    var: ansible_os_family
+
+- name: Ensure old versions of Docker are not installed.
+  package:
+    name:
+      - docker
+      - docker-client
+      - docker-client-latest
+      - docker-common
+      - docker-latest
+      - docker-latest-logrotate
+      - docker-logrotate
+      - docker-engine
+      - podman
+      - runc
+      - docker.io
+      - containerd
+    state: absent
+
+- name: Remove pip
+  yum:
+    name:
+      - pip
+      - pip3
+      - pip-3
+    state: absent
+
+- name: Install-Online
+  block:
+    - name: Install-Online yum utils
+      yum:
+        name: yum-utils
+      register: result
+    - name: Online Add repository
+      template:
+        src: docker-online.repo.j2
+        dest: "{{ docker_repo_path }}"
+      register: result
+  rescue:
+    - debug:
+        msg: 'Online Installation Error '
+    - debug:
+        var: result
+  always:
+    - name: Finish
+      debug:
+        msg: "Finish online install configuration"
+  when: docker_install_offline_mode != true
+
+- name: Install-Offline
+  block:
+    - name: Copy RPM files (packages) to the target machine
+      copy:
+        src: "{{ docker_dist_path }}/{{ docker_dist_name }}"
+        dest: "{{ docker_remote_package_path }}/"
+        force: false
+#    remote_src: yes
+
+- name: Show docker_dist_path
+  debug:
+    var: docker_dist_path, ansible_host
+
+# Configuring yum and local repository
+- name: Configure yum.conf on target host
+  template:
+    src: yum.conf.j2
+    dest: '/etc/yum/yum.conf'
+  register: result
+- name: Configure local repo file
+  template:
+    src: docker.repo.j2
+    dest: "{{ docker_repo_path }}"
+  register: result
+# Installing Software
+- name: Disable other repo
+  dnf:
+    disablerepo: "*"
+    enablerepo: "{{ docker_repo_name }}"
+  register: result
+  rescue:
+    - debug:
+        msg: 'Offline Installation Error '
+    - debug:
+        var: result
+  always:
+    - name: Finish
+      debug:
+        msg: "Finish Offline install configuration"
+  when: docker_install_offline_mode == true
+
+# Start installing
+
+- name: Installing Python, Docker
+  yum:
+    name:
+      - python3.8
+      - python3-pip
+      - docker-ce
+      - docker-ce-cli
+      - containerd.io
+      - docker-buildx-plugin
+      - docker-compose-plugin
+    state: present
+    update_cache: yes
+
+# Enable Services
+- name: Enable docker.service
+  systemd:
+    name: docker.service
+    daemon_reload: true
+    enabled: true
+    state: restarted
+
+- name: Enable containerd.service
+  systemd:
+    name: containerd.service
+    daemon_reload: true
+    enabled: true
+    state: restarted

@@ -1,0 +1,13 @@
+[main]
+keepcache=1
+cachedir="{{ docker_remote_package_path }}/{{ docker_dist_name }}"
+debuglevel=2
+logfile=/var/log/yum.log
+exactarch=1
+obsoletes=1
+plugins=1
+gpgcheck=1
+installonly_limit=3
+clean_requirements_on_remove=True
+best=False
+skip_if_unavailable=False

@@ -1,0 +1,34 @@
+---
+http_proxy: ''
+https_proxy: ''
+
+pip_extra_args: ''
+
+# Internet repo url for remote install
+docker_deb_key_url: 'https://download.docker.com/linux/debian/gpg'
+docker_deb_repo_string: 'deb https://archive.debian.org/debian/ stretch main contrib non-free'
+
+# Packages dir name
+docker_dist_name: 'repos_alma_8.8'
+
+# Path to distrib dir containing dependency files / dirs
+docker_dist_path: '/root'
+
+# Path to distr on the remote host
+docker_remote_package_path: '/opt'
+
+# FileName of local repo config
+docker_repo_name: 'my_docker.repo'
+
+# Full path for local repo config
+docker_repo_path: "/etc/yum.repos.d/{{ docker_repo_name }}"
+
+# Type of installation process: local - network connection Off, online - network connection On
+docker_install_offline_mode: false
+
+# Path to gpg key for repository
+# Ubuntu https://download.docker.com/linux/ubuntu/gpg
+# Astra:
+docker_rpm_gpg_url: ''
+docker_rpm_repo_string: ''
+

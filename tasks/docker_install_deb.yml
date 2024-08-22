@@ -1,0 +1,203 @@
+---
+- debug:
+    var: ansible_os_family
+
+- name: Install python3-apt
+  apt:
+    name: python3-apt
+    state: present
+
+- name: Remove old versions of Docker
+  apt:
+    name:
+      - docker.io
+      - docker
+      - docker-compose
+      - podman-docker
+      - docker-engine
+      - containerd.io
+      - runc
+    state: absent
+    autoremove: yes
+
+- name: Install-Online
+  block:
+    - name: Install Online dependencies
+      apt:
+        name:
+          - apt-transport-https
+          - ca-certificates
+          - curl
+          - software-properties-common
+          - gnupg2
+        state: present
+        update_cache: true
+      register: apt_action
+      retries: 10
+#      until: apt_action is success or ('Failed to lock apt for exclusive operation' not in apt_action.msg and '/var/lib/dpkg/lock' not in apt_action.msg)
+
+    - name: Prepare online install Ubuntu - ubuntu-advantage-tools
+      apt:
+        name: ubuntu-advantage-tools
+      when: "{{ 'Ubuntu' in ansible_os_family }}"
+
+    - name: Autoremove old dependencies
+      apt:
+        autoremove: yes
+        autoclean: yes
+
+    - name: Remove file (delete file)
+      ansible.builtin.file:
+        path:
+          - /var/lib/apt/lists/lock
+          - /var/lib/dpkg/lock*
+        state: absent
+
+    - name: Make dir for gpg key
+      file:
+        path: /usr/share/keyrings
+        state: directory
+        mode: '0755'
+
+    - name: Add docker repository gpg - Astra
+      shell: "sudo curl -fsSL {{ docker_deb_key_url }} | \
+             sudo gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg --yes"
+      when: "{{ 'Astra' in ansible_os_family }}"
+
+    - name: Add docker repository gpg - Ubuntu
+      shell: "sudo curl -fsSL {{ docker_deb_key_url }} | sudo gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg --yes"
+      when: "{{ 'Ubuntu' in ansible_os_family }}"
+
+    - name: Add docker repository - Astra
+      apt_repository:
+        state: present
+        update_cache: true
+        repo: "{{ docker_deb_repo_string }}"
+      when: "{{ 'Astra' in ansible_os_family }}"
+
+    - name: Add apt cache policy
+      shell: apt-cache policy docker-ce
+
+    - name: Add debian-archive-keyring - Astra
+      apt:
+        name: debian-archive-keyring
+      when: "{{ 'Astra' in ansible_os_family }}"
+  rescue:
+    - debug:
+        msg: 'Online Installation Error '
+    - debug:
+        var: result
+  always:
+    - name: Ending Play for Online Installation configuration
+      debug:
+        msg: "Finished online install configuration"
+  when: docker_install_offline_mode != true
+
+# Installing Offline Docker Dependencies
+- name: Install-Offline
+  block:
+    - name: Synchronization without --archive options enabled except use --links
+      ansible.posix.synchronize:
+        src: "{{ docker_dist_path }}"
+        dest: "{{ docker_remote_package_path }}"
+        archive: true
+#    links: true
+      when: ansible_os_family in ['Ubuntu']
+
+    - name: Copy deb files to the target machine
+      ignore_errors: yes
+      copy:
+        src: "{{ docker_dist_path }}"
+        dest: "{{ docker_remote_package_path }}"
+        force: false
+#    remote_src: yes
+#    validate: ls | wc -l
+
+
+    - name: Configure apt on target host
+      template:
+        src: 10sandbox.j2
+        dest: '/etc/apt/apt.conf.d/10sandbox'
+
+    - name: Configure package sources list
+      template:
+        src: docker-repository.list.j2
+        dest: '/etc/apt/sources.list.d/docker-repository.list'
+
+    - name: Create a symbolic link to Python3 - To solve error "python-apt not found"
+      ansible.builtin.file:
+        src: /usr/bin/python3
+        dest: /usr/bin/python
+        force: true
+        state: link
+
+
+    - name: Apt update apt cache and sources list
+      ansible.builtin.apt:
+        autoremove: yes
+        update_cache: yes
+      register: result
+  rescue:
+    - debug:
+        msg: 'Offline Installation Error '
+    - debug:
+        var: result
+  always:
+    - name: Ending Play for Offline Installation configuration
+      debug:
+        msg: "Finished offline install"
+  when: docker_install_offline_mode == true
+
+
+# Preparing for docker installation
+
+- name: Installing  Python
+  apt:
+    name:
+      - python3
+      - python3-pip
+      - python3-docker
+  state: present
+  update_cache: true
+  register: result
+
+- name: Installing  Docker - Astra
+  apt:
+    name:
+      - docker
+      - docker-compose
+      - containerd
+    state: present
+    update_cache: true
+  register: result
+  when: "{{ 'Astra' in ansible_os_family }}"
+
+- name: Installing  Docker - Ubuntu
+  apt:
+    name:
+      - containerd.io
+      - docker-ce-cli
+      - docker-ce-rootless-extras
+      - docker-buildx-plugin
+      - docker-ce
+      - docker-compose-plugin
+    state: present
+    update_cache: true
+  environment:
+    http_proxy: "{{ http_proxy }}"
+    https_proxy: "{{ https_proxy }}"
+  register: result
+  when: "{{ 'Ubuntu' in ansible_os_family }}"
+
+# Enable Services
+- name: Enable docker.service
+  systemd:
+    name: docker.service
+    daemon_reload: true
+    enabled: true
+
+- name: Enable containerd.service
+  systemd:
+    name: containerd.service
+    daemon_reload: true
+    enabled: true
