@@ -1,7 +1,7 @@
 docker-install 
 =========
 
-Installing docker / docker-compose and its dependencies on a new server.
+Installing docker / docker-compose and its dependencies with online/offline mode on a new server of any OS version (Alma, Debian, Astra, RED, Centos, Ubuntu). There is two ways - deb or rpm install 
 
 Role variables
 ------------
