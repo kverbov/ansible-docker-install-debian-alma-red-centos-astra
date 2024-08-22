@@ -22,11 +22,11 @@ Using templates
 ------------
 It is possible to use templates. In order for a file to be considered a template, you need to add .j2 to its extension, for example: docker-compose.yml -> docker-compose.yml.j2. During the generation of final files, the .j2 extension will be discarded. The following templates are provided in this role:
 
-10sandbox.j2 - config file for apt-manager
-yum.conf.j2 - config file for yum-manager
-docker-online.repo.j2 - config file for online repositories
-docker-repository.list.j2 - config file for offline repositories
-docker.repo.j2 - config file for remote repository
+ - 10sandbox.j2 - config file for apt-manager
+ - yum.conf.j2 - config file for yum-manager
+ - docker-online.repo.j2 - config file for online repositories
+ - docker-repository.list.j2 - config file for offline repositories
+ - docker.repo.j2 - config file for remote repository
 
 Launch
 ------------
