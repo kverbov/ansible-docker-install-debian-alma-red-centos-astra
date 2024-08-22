@@ -1,46 +1,24 @@
-docker-install 
-=========
+Installing docker / docker-compose and its dependencies on a new server.
 
-Установка docker / docker-compose и его зависимостей на новый сервер.
+Role variables
+Description and examples of variables are given in the defaults/main.yml file
 
-Переменные роли
-------------
+Deployment
+In order to deploy docker on a new server, you need to:
 
-Описание и примеры переменных приведены в файле defaults/main.yml
+Determine the installation method in the "docker_install_offline_mode" variable. If this is offline mode, then download the packages and specify the path to the directory in the "docker_dist_name" variable and the base directory "docker_dist_path" If this is online mode, then specify the paths to the online repository and keys in the variables depending on the version of the packages:
 
-Деплой
---------------
+RPM packages: docker_rpm_gpg_url docker_rpm_repo_string
 
-Для того чтобы развернуть docker на новом сервере необходимо:
+DEB packages: docker_deb_key_url docker_deb_repo_string
 
-Определить способ установки в переменой "docker_install_offline_mode".
-Если это оффлайн режим, тогда скачать пакеты и указать путь к каталогу в переменой "docker_dist_name" и базову директорию "docker_dist_path"
-Если это онлайн режим, тогда укаать пути к онлайн репозиторию и ключам в переменных в зависимости от версии пакетов:
+Using templates
+It is possible to use templates. In order for a file to be considered a template, you need to add .j2 to its extension, for example: docker-compose.yml -> docker-compose.yml.j2. During the generation of final files, the .j2 extension will be discarded. The following templates are provided in this role:
 
-RPM - пакеты:
-docker_rpm_gpg_url
-docker_rpm_repo_string
-
-DEB - пакеты:
-docker_deb_key_url
-docker_deb_repo_string
-
-Использование шаблонов
-------------
-
-Доступна возможность использования шаблонов.
-Для того чтобы файл считался шаблоном, необходимо к его расширению добавить .j2,
-например: docker-compose.yml -> docker-compose.yml.j2.
-В процессе генерации конечных файлов, расширение .j2 будет отброшено.
-В данной роли предсавлены следующие темплейты:
-
-- 10sandbox.j2 - конфиг файл для apt-менеджера
-- yum.conf.j2 - конфиг файл для yum-менеджера
-- docker-online.repo.j2 - конфиг файл онлайн репозиториев
-- docker-repository.list.j2 - конфиг файл оффлайн репозиториев
-- docker.repo.j2 - конфиг файл удаленного репозиторея
-
-Запуск
-------------
-Для запуска рекомендуется указывать версию интерпретатора python, установленного на target хосте:
-ansible-playbook -i ~/hosts.txt ~/main.yml -vv --extra-vars 'ansible_python_interpreter=/usr/bin/python3.5'
+10sandbox.j2 - config file for apt-manager
+yum.conf.j2 - config file for yum-manager
+docker-online.repo.j2 - config file for online repositories
+docker-repository.list.j2 - config file for offline repositories
+docker.repo.j2 - config file for remote repository
+Launch
+To launch, it is recommended to specify the version of the python interpreter installed on the target host: ansible-playbook -i ~/hosts.txt ~/main.yml -vv --extra-vars 'ansible_python_interpreter=/usr/bin/python3.5'
